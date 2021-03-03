@@ -14,9 +14,10 @@ The main drawback for Mirage is that it is client side only. This makes it impos
 
 For fun, we can walk through using MSW to create pages in Gatsby.
 
-* Use the gatsby cli to create a site from a starter: `gatsby new mock-it https://github.com/davydka/gatsby-starter-typescript-sass`
-* Install MSW: `yarn add msw --dev`
-* Create a `mocks/handlers.js` file. This handler file can be used both server-side and client-side. Notice the placeholder `baseApi`, which assumes the location of our data server. MSW will be overriding calls to this api.
+- Use the gatsby cli to create a site from a starter: `gatsby new mock-it https://github.com/davydka/gatsby-starter-typescript-sass`
+- Install MSW: `yarn add msw --dev`
+- Create a `mocks/handlers.js` file. This handler file can be used both server-side and client-side. Notice the placeholder `baseApi`, which assumes the location of our data server. MSW will be overriding calls to this api.
+
 ```js
 const { rest } = require("msw");
 const posts = require("./models/posts");
@@ -29,7 +30,9 @@ module.exports = [
   }),
 ];
 ```
-* Create your data models. The content here is really up to your api requirements and business needs. You can use static files, tools such as `faker` to help build mock data, and schema.org to help plan out your data model. For our purposes, we will use an overly simple blog posts model. Create a `mocks/models/posts.js` file.
+
+- Create your data models. The content here is really up to your api requirements and business needs. You can use static files, tools such as `faker` to help build mock data, and schema.org to help plan out your data model. For our purposes, we will use an overly simple blog posts model. Create a `mocks/models/posts.js` file.
+
 ```js
 module.exports = [
   {
@@ -52,7 +55,9 @@ module.exports = [
   },
 ];
 ```
-* From here, we need to integrate our mocked data. We can decide to do this in the browser or in Node. The handler we wrote previously will work with both solutions. In this case, we'll use Node to demonstrate using MSW as a mock SSR solution. Create a `mocks/server.js` file.
+
+- From here, we need to integrate our mocked data. We can decide to do this in the browser or in Node. The handler we wrote previously will work with both solutions. In this case, we'll use Node to demonstrate using MSW as a mock SSR solution. Create a `mocks/server.js` file.
+
 ```js
 const { setupServer } = require('msw/node/lib/index');
 
@@ -62,7 +67,9 @@ const server = setupServer(...handlers);
 
 module.exports = server;
 ```
-* For Gatsby, we can use the `createPages` method in the `gatsby-node.js` file to generate SSR pages from an api endpoint. Create a `gatsby-node.js` file.
+
+- For Gatsby, we can use the `createPages` method in the `gatsby-node.js` file to generate SSR pages from an api endpoint. Create a `gatsby-node.js` file.
+
 ```js
 const path = require('path');
 const fetch = require('node-fetch');
@@ -79,9 +86,9 @@ exports.createPages = async ({ actions }) => {
   const { createPage } = actions;
 
   const data = await fetch(`${baseApi}/posts`)
-    .then(response => response.json())
-    .then(data => data)
-    .catch(err => console.log(err));
+    .then((response) => response.json())
+    .then((data) => data)
+    .catch((err) => console.log(err));
 
   data?.forEach(post => {
     createPage({
@@ -92,12 +99,47 @@ exports.createPages = async ({ actions }) => {
   });
 };
 ```
-* Notice that when we use `yarn start` get a connection refused error from the api (in the terminal, `code: 'ECONNREFUSED'`). We can use environment variables to tell MSW to override our currently non-existent api and use our mock data. Add the following to `package.json`:
+
+- And we will need to create a `src/pages/post.tsx` template:
+
+```tsx
+import React from 'react';
+
+import styles from './index.module.scss';
+
+interface IProps {
+  pathContext: {
+    post: {
+      id: number;
+      title: string;
+      body: string;
+    };
+  };
+}
+
+const PostPage: React.FC<IProps> = ({ pathContext }) => {
+  const {
+    post: { title, body },
+  } = pathContext;
+
+  return (
+    <div className={styles.container}>
+      <h1>{title}</h1>
+      <p>{body}</p>
+    </div>
+  );
+};
+
+export default PostPage;
+```
+
+- Notice that when we use `yarn start` get a connection refused error from the api (in the terminal, `code: 'ECONNREFUSED'`). We can use environment variables to tell MSW to override our currently non-existent api and use our mock data. Add the following to `package.json`:
+
   ```js
   "start:mock": "NODE_ENV=mock gatsby develop",
   ```
-  * Run `yarn start:mock` and navigate to `http://localhost:8000/post/123`. See that mock data is used for the post pages.
 
-* You can now follow [further instructions](https://mswjs.io/docs/getting-started/integrate/browser) on MSW's documentation to setup a client-side service worker and we will have a mocking solution for both SSR and client api calls. Further work can be done to integrate MSW into Cypress, Jest, and even Storybook.
-  * Hint: For the client portion of the Gatsy site, use the MSW cli to generate a serviceWorker for testing in the web browser: `npx msw init static/ --save`
+  - Run `yarn start:mock` and navigate to `http://localhost:8000/post/123`. See that mock data is used for the post pages.
 
+- You can now follow [further instructions](https://mswjs.io/docs/getting-started/integrate/browser) on MSW's documentation to setup a client-side service worker and we will have a mocking solution for both SSR and client api calls. Further work can be done to integrate MSW into Cypress, Jest, and even Storybook.
+  - Hint: For the client portion of the Gatsy site, use the MSW cli to generate a serviceWorker for testing in the web browser: `npx msw init static/ --save`
